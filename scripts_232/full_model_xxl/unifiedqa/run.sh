@@ -1,0 +1,1 @@
+bash /mnt/sfs_turbo/hyf/BMQA/scripts_huawei/full_model_xxl/unifiedqa/prompttune_t5_unifiedqa_fp32.sh 0.01 4 2021

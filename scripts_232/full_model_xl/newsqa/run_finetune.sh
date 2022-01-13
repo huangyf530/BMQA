@@ -1,0 +1,1 @@
+bash /mnt/sfs_turbo/hyf/BMQA/scripts_huawei/full_model_xl/newsqa/finetune_t5_fp32.sh 0.0001 2 2021

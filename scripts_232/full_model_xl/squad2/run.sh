@@ -1,0 +1,1 @@
+bash /mnt/sfs_turbo/hyf/BMQA/scripts_huawei/full_model_xxl/squad2/prompttune_t5_squad2_fp32.sh 0.01 2 2021

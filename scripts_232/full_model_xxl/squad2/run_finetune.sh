@@ -1,0 +1,1 @@
+bash /mnt/sfs_turbo/hyf/BMQA/scripts_huawei/full_model_xxl/squad2/finetune_t5_squad2_fp32.sh 0.00005 64 2021

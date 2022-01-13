@@ -1,0 +1,1 @@
+bash /data1/private/hyf/BMQA/scripts_232/full_model_large/unifiedqa/finetune_t5_unifiedqa_fp32.sh 0.0005 4 2021

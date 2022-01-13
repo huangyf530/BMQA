@@ -1,0 +1,1 @@
+bash /mnt/sfs_turbo/hyf/BMQA/scripts_huawei/full_model_xl/squad2/evaluate.sh 0.0001 2 2021

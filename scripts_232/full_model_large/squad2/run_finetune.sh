@@ -1,0 +1,1 @@
+bash /data1/private/hyf/BMQA/scripts_232/full_model_large/squad2/finetune_t5_squad2_fp32.sh 0.0005 2 2021
