@@ -6,6 +6,5 @@ checkpoints/
 __pycache__
 *.so
 **/__pycache__
-scripts_huawei
-scripts_example
+scripts_*
 deploy_model

@@ -51,7 +51,7 @@ class UnifiedQADataset(CPM2Dataset):
                     current_data = {
                         "idx": self.idx,  
                         "enc_input_ids": context,
-                        "dec_input_ids": target,
+                        "dec_input_ids": target[:-1],
                         "label_ids": target[1:],
                         "origin_idx": d['idx'],
                         "answers": answer_set,
