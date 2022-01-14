@@ -12,7 +12,8 @@ def convert_key(init_key, new_key, obj):
 
 if __name__=="__main__":
     qa_dir = sys.argv[1]
-    qa_dirs = os.listdir(qa_dir)
+    # qa_dirs = os.listdir(qa_dir)
+    qa_dirs = ['NewsQA', 'QuoRef', 'SQuAD1.1', 'SQuAD2.0', 'drop', 'narrativeqa', 'nqans']
     output_dir = os.path.join(qa_dir, 'unified')
     os.makedirs(output_dir, exist_ok=True)
     output_train_file = os.path.join(output_dir, 'train.jsonl')

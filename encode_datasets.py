@@ -23,7 +23,7 @@ def read_data_from_squad(path, split, dataset='squad'):
             title = d['title']
             passage = p['context']
             passage = title + ' </s> ' + passage
-            passage.replace('\n', ' ')  # replace \n
+            passage = passage.replace('\n', ' ')  # replace \n
             for qa in p['qas']:
                 question = qa['question']
                 answers_set = set()
@@ -334,9 +334,9 @@ def drop():
                     
 
 if __name__ == "__main__":
-    # squad()
-    nqans()
-    # quoref()
+    squad()
+    # nqans()
+    quoref()
     # newsqa()
     # drop()
-    # squad1_1()
+    squad1_1()
