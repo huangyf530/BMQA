@@ -265,7 +265,10 @@ def initialize_distributed(args):
     master_ip = os.getenv('MASTER_ADDR', 'localhost')
     master_port = os.getenv('MASTER_PORT', '6000')
     init_method += master_ip + ':' + master_port
-    deepspeed.init_distributed()
+    if args.deepspeed:
+        deepspeed.init_distributed()
+    else:
+        torch.distributed.init_process_group(backend=args.distributed_backend, init_method=init_method, world_size=args.world_size, rank=args.rank)
 
     # Set the model-parallel / data-parallel communicators.
     mpu.initialize_model_parallel(args.model_parallel_size)

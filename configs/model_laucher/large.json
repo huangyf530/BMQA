@@ -1,0 +1,11 @@
+{
+    "model_config": "/data/disk1/private/huangyufei/BMQA/configs/model/t5_large_config.json",
+    "model_parallel_size": 1,
+    "load": "/data/disk1/private/huangyufei/BMQA/deploy_model/unified_large_5000_0.538",
+    "distributed_backend": "nccl",
+    "no_load_optim": true,
+    "tokenizer_path": "/data/disk1/private/huangyufei/BMQA/sp_t5",
+    "seed": 2021,
+    "deepspeed": true,
+    "deepspeed_config": "/data/disk1/private/huangyufei/BMQA/configs/deepspeed/ds_full_model_fp32.json"
+}
