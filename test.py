@@ -36,6 +36,14 @@ doc_scores = [1.0]
 # question = "highest mountain in Shandong Province"
 host="http://166.111.5.239:21212/search"
 
+data_name_info = {
+    "enc_input_ids": (2, torch.long),
+    "enc_attention_mask": (4, torch.float),
+    "dec_attention_mask": (4, torch.float),
+    "cross_attention_mask": (4, torch.float),
+    "dec_input_ids": (2, torch.long),
+}
+
 def construct_input(question, passages, tokenizer, args):
     if '?' not in question:
         question += '?'
@@ -143,6 +151,19 @@ def request_for_doc(question):
     scores = docs_scores['score']
     return docs, scores
 
+def broadcast_data(data, device, shape_len, dtype, group):
+    shape_tensor = torch.zeros(shape_len, device=device).long()
+    if mpu.get_model_parallel_rank() == 0:
+        shape = data.shape
+        shape_tensor = torch.tensor(shape, dtype=torch.long, device=device)
+        torch.distributed.broadcast(shape_tensor, 0, group)
+        assert data is not None
+        torch.distributed.broadcast(data, 0, group)
+    else:
+        torch.distributed.broadcast(shape_tensor, 0, group)
+        data = torch.zeros(shape_tensor.tolist(), dtype=dtype, device=device)
+        torch.distributed.broadcast(data, 0, group)
+    return data
 
 if __name__ == "__main__":
     """Main training program."""
@@ -196,55 +217,76 @@ if __name__ == "__main__":
     model, optimizer, lr_scheduler = setup_model_and_optimizer(args, tokenizer.vocab_size, None, prompt_config)
     model.eval()
     print_rank_0("Load model over.")
+    batch_size = 16
     while True:
-        # question = input(">>Please input question:")
-        # question = "capital of Shanxi"
-        question = question.strip()
-        if question == '':
-            continue
-        start_time = time.time()
-        print_rank_0("Question: {}".format(question))
-        print_rank_0("request for relevent docs ...")
-        # docs, doc_scores = request_for_doc(question)
-        qa_start_time = time.time()
-        print_rank_0(f"get {len(docs)} docs. generate answers from docs ...")
-        print_rank_0(f"for question \"{question}\"")
         ans_predictions = []
         no_ans_predictions = []
-        # for i, (doc, doc_score) in enumerate(zip(docs, doc_scores)):
-        batch_size = 16
-        max_doc = min(10, len(docs))
+        if mpu.get_model_parallel_rank() == 0:
+            question = input(">>Please input question:")
+            # question = "capital of Shanxi"
+            question = question.strip()
+            if question == '':
+                continue
+            start_time = time.time()
+            print_rank_0("Question: {}".format(question))
+            print_rank_0("request for relevent docs ...")
+            # docs, doc_scores = request_for_doc(question)
+            qa_start_time = time.time()
+            print_rank_0(f"get {len(docs)} docs. generate answers from docs ...")
+            print_rank_0(f"for question \"{question}\"")
+            # for i, (doc, doc_score) in enumerate(zip(docs, doc_scores)):
+            max_doc = min(10, len(docs))
+            max_doc_tensor = torch.tensor(max_doc, dtype=torch.long, device=device)
+            if mpu.model_parallel_is_initialized():
+                torch.distributed.barrier()
+                torch.distributed.broadcast(max_doc_tensor, 0, mpu.get_model_parallel_group())
+        else:  # other model rank
+            torch.distributed.barrier()
+            max_doc_tensor = torch.tensor(0, dtype=torch.long, device=device)
+            # print(max_doc_tensor)
+            torch.distributed.broadcast(max_doc_tensor, 0, mpu.get_model_parallel_group())
+            max_doc = max_doc_tensor.item()
         for i in range(0, max_doc, batch_size):
-            end = min(i + batch_size, max_doc)
-            batch_docs = [docs[j]['text'] for j in range(i, end)]
-            batch_doc_scores = [doc_scores[j] for j in range(i, end)]
-            model_batch = construct_input(question, batch_docs, tokenizer, args)
-            for key, data in model_batch.items():
-                model_batch[key] = data.to(device)
+            if mpu.get_model_parallel_rank() == 0:
+                # construct data
+                end = min(i + batch_size, max_doc)
+                batch_docs = [docs[j]['text'] for j in range(i, end)]
+                batch_doc_scores = [doc_scores[j] for j in range(i, end)]
+                model_batch = construct_input(question, batch_docs, tokenizer, args)
+                for key, (shape_len, dtype)in data_name_info.items():
+                    data = model_batch[key]
+                    current_data = data.to(device)
+                    if mpu.model_parallel_is_initialized():
+                        model_batch[key] = broadcast_data(current_data, device, shape_len, dtype, mpu.get_model_parallel_group())
+            else:
+                model_batch = {}
+                for key, (shape_len, dtype)in data_name_info.items():
+                    model_batch[key] = broadcast_data(None, device, shape_len, dtype, mpu.get_model_parallel_group())
             predictions = generate(args, model, model_batch, tokenizer, device)
-            for j, p in enumerate(predictions):
-                doc = docs[i + j]
-                doc_score = batch_doc_scores[j]
-                final_score = p['score']
-                if p['prediction'] == 'no answer':
-                    no_ans_predictions.append({
-                        'prediction': p['prediction'],
-                        'doc': doc['text'],
-                        'p_score': p['score'],
-                        'd_score': doc_score,
-                        'f_score': final_score,
-                        'title': doc['title']
-                    })
-                else:
-                    ans_predictions.append({
-                        'prediction': p['prediction'],
-                        'doc': doc['text'],
-                        'p_score': p['score'],
-                        'd_score': doc_score,
-                        'f_score': final_score,
-                        'title': doc['title']
-                    })
-                # print_rank_0(f"doc {i}: \nprediction: {p['prediction']}\ndoc: {doc['text']}")
+            if mpu.get_model_parallel_rank() == 0:
+                for j, p in enumerate(predictions):
+                    doc = docs[i + j]
+                    doc_score = batch_doc_scores[j]
+                    final_score = p['score']
+                    if p['prediction'] == 'no answer':
+                        no_ans_predictions.append({
+                            'prediction': p['prediction'],
+                            'doc': doc['text'],
+                            'p_score': p['score'],
+                            'd_score': doc_score,
+                            'f_score': final_score,
+                            'title': doc['title']
+                        })
+                    else:
+                        ans_predictions.append({
+                            'prediction': p['prediction'],
+                            'doc': doc['text'],
+                            'p_score': p['score'],
+                            'd_score': doc_score,
+                            'f_score': final_score,
+                            'title': doc['title']
+                        })
+                    # print_rank_0(f"doc {i}: \nprediction: {p['prediction']}\ndoc: {doc['text']}")
         ans_predictions.sort(key=lambda p: p['f_score'], reverse=True)
         no_ans_predictions.sort(key=lambda p: p['f_score'], reverse=True)
         cnt = 0
@@ -263,6 +305,8 @@ if __name__ == "__main__":
             print_rank_0('')
             cnt += 1
         print_rank_0('Question: {}'.format(question))
-        print_rank_0('time for getting doc: {:.3} s. time for qa: {} s'.format(qa_start_time - start_time, time.time() - qa_start_time))
-        quit()
+        if mpu.get_model_parallel_rank() == 0:
+            print_rank_0('time for getting doc: {:.3} s. time for qa: {} s'.format(qa_start_time - start_time, time.time() - qa_start_time))
+        if mpu.model_parallel_is_initialized():
+            torch.distributed.barrier() # sychronize
 
