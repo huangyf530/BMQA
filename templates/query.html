@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <title>BMQA</title>
+  </head>
+  <body>
+      <h2>Question: {{ question }}</h2>
+      {% for p in predictions %}
+      <h3>Prediction {{ p.index }}: {{ p.prediction }}</h3>
+      <p>    Score: {{ p.f_score }}, Doc score: {{ p.d_score }}, QA score: {{ p.p_score }}</p>
+      <p>    Title: {{ p.title }}<p>
+      <p>    Doc: {{ p.doc }}</p>
+      <p></p>
+      {% endfor %}
+  </body>
+</html>

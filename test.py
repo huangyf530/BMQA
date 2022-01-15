@@ -173,8 +173,10 @@ def get_answer_from_model(question, model, batch_size, tokenizer, device):
         # question = "capital of Shanxi"
         question = question.strip()
         start_time = time.time()
+        print_rank_0("search docs ...")
         docs, doc_scores = request_for_doc(question)
         qa_start_time = time.time()
+        print_rank_0("Get {} docs, use time {:.3f} s".format(len(docs), qa_start_time - start_time))
         # for i, (doc, doc_score) in enumerate(zip(docs, doc_scores)):
         max_doc = min(10, len(docs))
         max_doc_tensor = torch.tensor(max_doc, dtype=torch.long, device=device)
@@ -208,7 +210,7 @@ def get_answer_from_model(question, model, batch_size, tokenizer, device):
             for j, p in enumerate(predictions):
                 doc = docs[i + j]
                 doc_score = batch_doc_scores[j]
-                final_score = doc_score
+                final_score = doc_score * p['score']
                 if p['prediction'] == 'no answer':
                     no_ans_predictions.append({
                         'prediction': p['prediction'],
