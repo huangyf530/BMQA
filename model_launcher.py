@@ -41,6 +41,7 @@ def distributed_main(i, args):
     set_distributed_environment(args)
     # Pytorch distributed.
     initialize_distributed(args)
+    print(f"Rank {args.rank}: run distributed")
     model, device, tokenizer = load_model(args)
     batch_size = 16
     while True:
@@ -68,7 +69,7 @@ class ModelLauncher():
             )
         set_distributed_environment(args)
         # Pytorch distributed.
-        print("run distributed")
+        print("Rank 0: run distributed")
         initialize_distributed(args)
         self.model, self.device, self.tokenizer = load_model(args)
         self.batch_size = 16
