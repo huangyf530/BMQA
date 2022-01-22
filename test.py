@@ -34,7 +34,7 @@ docs = [{
 }]
 doc_scores = [1.0]
 # question = "highest mountain in Shandong Province"
-host="http://166.111.5.239:21212/search"
+host="http://221.194.149.130:21213/search"
 
 data_name_info = {
     "enc_input_ids": (2, torch.long),
@@ -186,7 +186,7 @@ def get_answer_from_model(question, model, batch_size, tokenizer, device):
         question = question.strip()
         start_time = time.time()
         print_rank_0("search docs ...")
-        # docs, doc_scores = request_for_doc(question)
+        docs, doc_scores = request_for_doc(question)
         qa_start_time = time.time()
         print_rank_0("Get {} docs, use time {:.3f} s".format(len(docs), qa_start_time - start_time))
         # for i, (doc, doc_score) in enumerate(zip(docs, doc_scores)):

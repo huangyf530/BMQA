@@ -1,8 +1,8 @@
 {
     "model_config": "/data/disk1/private/huangyufei/BMQA/configs/model/t5_xl_config.json",
-    "model_parallel_size": 2,
+    "model_parallel_size": 1,
     "world_size": 1,
-    "load": "/data/disk1/private/huangyufei/BMQA/deploy_model/unified_B64_xl_27000_0.671",
+    "load": "/data/disk1/private/huangyufei/BMQA/deploy_model/unified_B64_xl_27000_0.671-MP1",
     "distributed_backend": "nccl",
     "no_load_optim": true,
     "tokenizer_path": "/data/disk1/private/huangyufei/BMQA/sp_t5",
